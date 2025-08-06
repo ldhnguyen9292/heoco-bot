@@ -58,8 +58,13 @@ async function loadHistory(channelId: string) {
   ]
 }
 
+interface ChatHistory {
+  role: string
+  parts: { text: string }[]
+}
+
 // Save history, trim to max
-async function saveHistory(channelId: string, history: any[]) {
+async function saveHistory(channelId: string, history: ChatHistory[]) {
   const trimmed = history.slice(-MAX_HISTORY_LENGTH)
   const filePath = path.join(CHAT_HISTORY_DIR, `${channelId}.json`)
   await fs.writeJSON(filePath, trimmed, { spaces: 2 })
