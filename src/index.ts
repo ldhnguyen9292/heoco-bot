@@ -3,6 +3,8 @@ dotenv.config()
 
 import { Client, GatewayIntentBits } from 'discord.js'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import fs from 'fs-extra'
+import path from 'path'
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
@@ -23,6 +25,46 @@ if (!GOOGLE_API_KEY) {
 const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY)
 const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
+const CHAT_HISTORY_DIR = path.join(process.cwd(), 'chat_histories')
+fs.ensureDirSync(CHAT_HISTORY_DIR)
+
+const MAX_HISTORY_LENGTH = 20
+
+// Load history by channel
+async function loadHistory(channelId: string) {
+  const filePath = path.join(CHAT_HISTORY_DIR, `${channelId}.json`)
+  if (await fs.pathExists(filePath)) {
+    return await fs.readJSON(filePath)
+  }
+
+  // New history with correct structure
+  return [
+    {
+      role: 'user',
+      parts: [
+        {
+          text: 'Bạn là anh trưởng nhóm tên Heo Co. Khi có người nhắn nhờ hoặc hỏi, bạn sẽ trả lời ngắn gọn, xưng "anh", không dài dòng.'
+        }
+      ]
+    },
+    {
+      role: 'model',
+      parts: [
+        {
+          text: 'Anh đã hiểu. Anh sẽ trả lời như người đại diện trưởng nhóm.'
+        }
+      ]
+    }
+  ]
+}
+
+// Save history, trim to max
+async function saveHistory(channelId: string, history: any[]) {
+  const trimmed = history.slice(-MAX_HISTORY_LENGTH)
+  const filePath = path.join(CHAT_HISTORY_DIR, `${channelId}.json`)
+  await fs.writeJSON(filePath, trimmed, { spaces: 2 })
+}
+
 client.on('messageCreate', async (message) => {
   // Bỏ qua bot
   if (message.author.bot) return
@@ -32,22 +74,40 @@ client.on('messageCreate', async (message) => {
     (user) => user.username === 'nguyenle9292' || user.id === '1399976425221521538'
   )
 
-  if (isMentioned) {
-    const userMessage = message.content
+  if (!isMentioned) return
 
-    const prompt = `Bạn là anh trưởng nhóm, đại diện trả lời thay người dùng tên nguyenle9292. Xưng là "anh", trả lời ngắn gọn, rõ ràng, không vòng vo. Câu hỏi hoặc tin nhắn: "${userMessage}"`
+  const channelId = message.channelId
+  const prompt = message.content
 
-    try {
-      // Gửi tin nhắn đến Gemini
-      const result = await model.generateContent(prompt)
-      const response = result.response
-      const text = response.text()
-
-      // Trả lời lại
-      await message.reply(text)
-    } catch (error) {
-      console.error('Lỗi khi gọi Gemini:', error)
+  try {
+    const history = await loadHistory(channelId)
+    if (!Array.isArray(history)) {
+      throw new Error(`Lịch sử hội thoại không hợp lệ cho kênh ${channelId}`)
     }
+
+    // Tạo cuộc hội thoại có sẵn lịch sử
+    const chat = model.startChat({ history })
+
+    const result = await chat.sendMessage(prompt)
+    let text = ''
+    if ('response' in result && typeof result.response?.text === 'function') {
+      text = result.response.text()
+    } else if ('text' in result && typeof result.text === 'string') {
+      // fallback nếu API trả thẳng chuỗi (hiếm nhưng có thể)
+      text = result.text
+    } else {
+      throw new Error('Không thể đọc phản hồi từ Gemini')
+    }
+
+    // Cập nhật lịch sử mới
+    history.push({ role: 'user', parts: [prompt] })
+    history.push({ role: 'model', parts: [text] })
+    await saveHistory(channelId, history)
+
+    await message.reply(text)
+  } catch (err) {
+    console.error('Lỗi khi xử lý message:', err)
+    await message.reply('❌ Xin lỗi, anh gặp lỗi khi xử lý tin nhắn này.')
   }
 })
 
