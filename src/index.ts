@@ -85,7 +85,7 @@ client.on('messageCreate', async (message) => {
   const prompt = message.content
 
   try {
-    const history = await loadHistory(channelId)
+    const history: ChatHistory[] = await loadHistory(channelId)
     if (!Array.isArray(history)) {
       throw new Error(`Lịch sử hội thoại không hợp lệ cho kênh ${channelId}`)
     }
@@ -105,8 +105,8 @@ client.on('messageCreate', async (message) => {
     }
 
     // Cập nhật lịch sử mới
-    history.push({ role: 'user', parts: [prompt] })
-    history.push({ role: 'model', parts: [text] })
+    history.push({ role: 'user', parts: [{ text: prompt }] })
+    history.push({ role: 'model', parts: [{ text }] })
     await saveHistory(channelId, history)
 
     await message.reply(text)
