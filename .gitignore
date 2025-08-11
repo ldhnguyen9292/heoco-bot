@@ -9,7 +9,6 @@ dist/
 build/
 *.js
 *.js.map
-*.d.ts
 
 # Editor/IDE specific files
 .vscode/
