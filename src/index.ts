@@ -28,7 +28,7 @@ const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 const CHAT_HISTORY_DIR = path.join(process.cwd(), 'chat_histories')
 fs.ensureDirSync(CHAT_HISTORY_DIR)
 
-const MAX_HISTORY_LENGTH = 20
+const MAX_HISTORY_LENGTH = 50
 
 // Load history by channel
 async function loadHistory(channelId: string) {
@@ -38,24 +38,7 @@ async function loadHistory(channelId: string) {
   }
 
   // New history with correct structure
-  return [
-    {
-      role: 'user',
-      parts: [
-        {
-          text: 'Bạn là anh trưởng nhóm tên Heo Co. Khi có người nhắn nhờ hoặc hỏi, bạn sẽ trả lời ngắn gọn, xưng "anh", không dài dòng.'
-        }
-      ]
-    },
-    {
-      role: 'model',
-      parts: [
-        {
-          text: 'Anh đã hiểu. Anh sẽ trả lời như người đại diện trưởng nhóm.'
-        }
-      ]
-    }
-  ]
+  return []
 }
 
 interface ChatHistory {
@@ -79,21 +62,28 @@ client.on('messageCreate', async (message) => {
     (user) => user.username === 'nguyenle9292' || user.id === '1399976425221521538'
   )
 
-  if (!isMentioned) return
-
-  const channelId = message.channelId
-  const prompt = message.content
-
   try {
+    const channelId = message.channelId
+    const prompt = message.content
+
     const history: ChatHistory[] = await loadHistory(channelId)
     if (!Array.isArray(history)) {
       throw new Error(`Lịch sử hội thoại không hợp lệ cho kênh ${channelId}`)
     }
 
+    if (!isMentioned) {
+      // Cập nhật lịch sử mới
+      history.push({ role: 'user', parts: [{ text: prompt }] })
+      await saveHistory(channelId, history)
+      return
+    }
+
     // Tạo cuộc hội thoại có sẵn lịch sử
     const chat = model.startChat({ history })
 
-    const result = await chat.sendMessage(prompt)
+    const result = await chat.sendMessage(
+      `prompt: ${prompt}, responseFormat: Bạn là trưởng nhóm tên Heo Cơ, trả lời ngắn gọn, xưng "anh" hoặc "khầy", không dài dòng.`
+    )
     let text = ''
     if ('response' in result && typeof result.response?.text === 'function') {
       text = result.response.text()
