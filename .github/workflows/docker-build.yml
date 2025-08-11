@@ -28,5 +28,10 @@ jobs:
           context: .
           push: true
           tags: |
-            your_dockerhub_username/chat-bot:latest
-            your_dockerhub_username/chat-bot:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/chat-bot:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/chat-bot:${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/chat-bot:cache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/chat-bot:cache,mode=max
+          build-args: |
+            NODE_ENV=production
+            DOCKER_BUILDKIT=1 
