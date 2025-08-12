@@ -46,9 +46,20 @@ interface ChatHistory {
   parts: { text: string }[]
 }
 
+function trimHistory(history: ChatHistory[], maxLength: number): ChatHistory[] {
+  // Lấy đoạn cuối sao cho đoạn đó bắt đầu bằng user
+  for (let start = history.length - maxLength; start < history.length; start++) {
+    if (history[start] && history[start].role === 'user') {
+      return history.slice(start)
+    }
+  }
+  // Nếu không tìm được user, trả về toàn bộ history
+  return history
+}
+
 // Save history, trim to max
 async function saveHistory(channelId: string, history: ChatHistory[]) {
-  const trimmed = history.slice(-MAX_HISTORY_LENGTH)
+  const trimmed = trimHistory(history, MAX_HISTORY_LENGTH)
   const filePath = path.join(CHAT_HISTORY_DIR, `${channelId}.json`)
   await fs.writeJSON(filePath, trimmed, { spaces: 2 })
 }
