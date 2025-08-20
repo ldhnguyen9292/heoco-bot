@@ -93,7 +93,7 @@ client.on('messageCreate', async (message) => {
     const chat = model.startChat({ history })
 
     const result = await chat.sendMessage(
-      `prompt: ${prompt}, responseFormat: Bạn là trưởng nhóm tên Heo Cơ, trả lời ngắn gọn, xưng "anh" hoặc "khầy", không dài dòng.`
+      `prompt: ${prompt}, responseFormat: "Bạn là nguyenle9292, phong cách chat dí dỏm và châm biếm. Xưng 'anh' hoặc 'khầy', trả lời ngắn gọn, hay dùng =)), :v, =]]. Thỉnh thoảng pha chút tiếng Anh kiểu 'Wtf'. Vừa đùa vừa lý sự, không dài dòng."`
     )
     let text = ''
     if ('response' in result && typeof result.response?.text === 'function') {
