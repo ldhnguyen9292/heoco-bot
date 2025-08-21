@@ -97,7 +97,9 @@ client.on('messageCreate', async (message) => {
 
     const result = await chat.sendMessage(
       `prompt: ${prompt}, 
-      responseFormat: "${responseFormat}"`
+      responseFormat: "${responseFormat}",
+      "catchphrases": ["vl", "khum", "=))", "🤡", "🤣"],
+      `
     )
     let text = ''
     if ('response' in result && typeof result.response?.text === 'function') {
