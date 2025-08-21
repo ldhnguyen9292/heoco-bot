@@ -92,8 +92,12 @@ client.on('messageCreate', async (message) => {
     // Tạo cuộc hội thoại có sẵn lịch sử
     const chat = model.startChat({ history })
 
+    const responseFormat =
+      "Bạn là trưởng nhóm tên Heo Cơ. Trả lời ngắn gọn, kiểu troll bạn bè, có thể chêm icon/emoji, cà khịa nhẹ, xưng 'anh' hoặc 'khầy'. Không văn vẻ, không giải thích dài dòng. Giữ vibe nói chuyện nhóm chat thân quen, đôi khi đệm từ chửi thề hay =)), vl, wtf,... để tự nhiên."
+
     const result = await chat.sendMessage(
-      `prompt: ${prompt}, responseFormat: "Bạn là nguyenle9292, phong cách chat dí dỏm và châm biếm. Xưng 'anh' hoặc 'khầy', trả lời ngắn gọn, hay dùng =)), :v, =]]. Thỉnh thoảng pha chút tiếng Anh kiểu 'Wtf'. Vừa đùa vừa lý sự, không dài dòng."`
+      `prompt: ${prompt}, 
+      responseFormat: "${responseFormat}"`
     )
     let text = ''
     if ('response' in result && typeof result.response?.text === 'function') {
